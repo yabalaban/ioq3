@@ -460,6 +460,13 @@ the above locations, if desired.
 
 # README for Developers
 
+## Custom bot controllers
+
+The server game module supports C bot controllers with per-bot state,
+observation/action callbacks, and access to existing botlib helpers. See
+[Native C bot controllers](docs/bot-api.md) for examples, registration,
+`botcontroller` console commands, and build instructions.
+
 ## pk3dir
 
 _ioquake3_ has a useful new feature for mappers. Paths in a game directory with
@@ -638,5 +645,4 @@ Significant contributions from
   * optical <alex@rigbo.se>
   * Aaron Gyes <floam@aaron.gy>
   * surrealchemist
-
 

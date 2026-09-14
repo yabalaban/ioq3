@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 
 #include "g_local.h"
+#include "g_botapi.h"
 #include "../qcommon/q_shared.h"
 #include "../botlib/botlib.h"		//bot lib interface
 #include "../botlib/be_aas.h"
@@ -907,6 +908,27 @@ void BotInputToUserCommand(bot_input_t *bi, usercmd_t *ucmd, int delta_angles[3]
 
 /*
 ==============
+BotController_ReadBotlibAction
+==============
+*/
+qboolean BotController_ReadBotlibAction( int client, botAction_t *action ) {
+	bot_input_t input;
+	usercmd_t command;
+	playerState_t ps;
+	if (!action || !BotController_IsAttached(client) || !BotAI_GetClientState(client, &ps)) return qfalse;
+	trap_EA_GetInput(client, 0, &input);
+	BotInputToUserCommand(&input, &command, ps.delta_angles, level.time);
+	action->forward = command.forwardmove;
+	action->right = command.rightmove;
+	action->up = command.upmove;
+	action->buttons = command.buttons;
+	action->weapon = command.weapon;
+	VectorCopy(input.viewangles, action->viewangles);
+	return qtrue;
+}
+
+/*
+==============
 BotUpdateInput
 ==============
 */
@@ -1272,6 +1294,7 @@ BotAIShutdownClient
 int BotAIShutdownClient(int client, qboolean restart) {
 	bot_state_t *bs;
 
+	BotController_Detach(client);
 	bs = botstates[client];
 	if (!bs || !bs->inuse) {
 		//BotAI_Print(PRT_ERROR, "BotAIShutdownClient: client %d already shutdown\n", client);
@@ -1361,6 +1384,27 @@ void BotResetState(bot_state_t *bs) {
 	if (bs->ws) trap_BotResetWeaponState(bs->ws);
 	if (bs->gs) trap_BotResetAvoidGoals(bs->gs);
 	if (bs->ms) trap_BotResetAvoidReach(bs->ms);
+}
+
+/*
+==============
+BotAIControllerChanged
+==============
+*/
+void BotAIControllerChanged( int client ) {
+	bot_state_t *bs;
+	int i;
+	if (client < 0 || client >= MAX_CLIENTS) return;
+	bs = botstates[client];
+	if (!bs || !bs->inuse) return;
+	BotAI_GetClientState(client, &bs->cur_ps);
+	BotResetState(bs);
+	bs->weaponnum = bs->cur_ps.weapon;
+	for (i = 0; i < 3; i++) {
+		bs->viewangles[i] = AngleMod(bs->cur_ps.viewangles[i] - SHORT2ANGLE(bs->cur_ps.delta_angles[i]));
+		bs->ideal_viewangles[i] = bs->cur_ps.viewangles[i];
+	}
+	trap_EA_ResetInput(client);
 }
 
 /*
@@ -1549,6 +1593,7 @@ int BotAIStartFrame(int time) {
 	}
 
 	floattime = trap_AAS_Time();
+	BotController_Frame(time);
 
 	// execute scheduled bot AI
 	for( i = 0; i < MAX_CLIENTS; i++ ) {
@@ -1564,7 +1609,7 @@ int BotAIStartFrame(int time) {
 			if (!trap_AAS_Initialized()) return qfalse;
 
 			if (g_entities[i].client->pers.connected == CON_CONNECTED) {
-				BotAI(i, (float) thinktime / 1000);
+				if (!BotController_IsAttached(i)) BotAI(i, (float) thinktime / 1000);
 			}
 		}
 	}
@@ -1579,7 +1624,9 @@ int BotAIStartFrame(int time) {
 			continue;
 		}
 
-		BotUpdateInput(botstates[i], time, elapsed_time);
+		if (!BotController_Input(i, time, &botstates[i]->lastucmd)) {
+			BotUpdateInput(botstates[i], time, elapsed_time);
+		}
 		trap_BotUserCommand(botstates[i]->client, &botstates[i]->lastucmd);
 	}
 
@@ -1663,6 +1710,7 @@ BotAISetup
 int BotAISetup( int restart ) {
 	int			errnum;
 
+	BotController_Init();
 	trap_Cvar_Register(&bot_thinktime, "bot_thinktime", "100", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_memorydump, "bot_memorydump", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_saveroutingcache, "bot_saveroutingcache", "0", CVAR_CHEAT);
@@ -1697,6 +1745,7 @@ BotAIShutdown
 int BotAIShutdown( int restart ) {
 
 	int i;
+	BotController_Shutdown();
 
 	//if the game is restarted for a tournament
 	if ( restart ) {
@@ -1713,4 +1762,3 @@ int BotAIShutdown( int restart ) {
 	}
 	return qtrue;
 }
-

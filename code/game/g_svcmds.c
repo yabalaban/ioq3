@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // this file holds commands that can be executed by the server console, but not remote clients
 
 #include "g_local.h"
+#include "g_botapi.h"
 
 
 /*
@@ -452,6 +453,9 @@ qboolean	ConsoleCommand( void ) {
 	char	cmd[MAX_TOKEN_CHARS];
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
+	if ( !Q_stricmp(cmd, "botcontroller") ) {
+		return BotController_ConsoleCommand();
+	}
 
 	if ( Q_stricmp (cmd, "entitylist") == 0 ) {
 		Svcmd_EntityList_f();
@@ -510,4 +514,3 @@ qboolean	ConsoleCommand( void ) {
 
 	return qfalse;
 }
-
