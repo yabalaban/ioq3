@@ -48,6 +48,8 @@ void BotController_RegisterAll( void );
 qboolean BotController_Attach( int client, const char *name, const char *config );
 void BotController_Detach( int client );
 qboolean BotController_IsAttached( int client );
+qboolean BotController_HasProvider( const char *name );
+const char *BotController_Name( int client );
 
 /* Privileged server observations: no field-of-view or visibility filtering. */
 qboolean BotController_GetEntity( int entity, botObservedEntity_t *observation );

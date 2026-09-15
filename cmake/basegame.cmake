@@ -51,6 +51,7 @@ set(GAME_SOURCES
     ${SOURCE_DIR}/game/g_arenas.c
     ${SOURCE_DIR}/game/g_bot.c
     ${SOURCE_DIR}/game/g_botapi.c
+    ${SOURCE_DIR}/game/g_botprofiles.c
     ${SOURCE_DIR}/game/g_botcontrollers.c
     ${SOURCE_DIR}/game/g_botastra.c
     ${SOURCE_DIR}/game/g_botspark.c

@@ -48,6 +48,17 @@ qboolean BotController_IsAttached( int client ) {
 	return client >= 0 && client < MAX_CLIENTS && clients[client].provider != NULL;
 }
 
+qboolean BotController_HasProvider( const char *name ) {
+	int i;
+	for (i = 0; i < numProviders; i++)
+		if (!Q_stricmp(name, providers[i]->name)) return qtrue;
+	return qfalse;
+}
+
+const char *BotController_Name( int client ) {
+	return BotController_IsAttached(client) ? clients[client].provider->name : "";
+}
+
 void BotController_Detach( int client ) {
 	controllerClient_t old;
 	if (inCallback || !BotController_IsAttached(client)) return;

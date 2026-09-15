@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 // g_bot.c
 
 #include "g_local.h"
+#include "g_botprofiles.h"
 
 
 static int		g_numBots;
@@ -347,6 +348,7 @@ int G_RemoveRandomBot( int team ) {
 		if ( team >= 0 && cl->sess.sessionTeam != team ) {
 			continue;
 		}
+		if ( BotProfiles_IsManaged(i) ) continue;
 		trap_SendConsoleCommand( EXEC_INSERT, va("clientkick %d\n", i) );
 		return qtrue;
 	}
@@ -580,7 +582,8 @@ qboolean G_BotConnect( int clientNum, qboolean restart ) {
 G_AddBot
 ===============
 */
-static void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname) {
+static int G_AddBotInternal( const char *name, float skill, const char *team, int delay,
+                            char *altname, const char *profile ) {
 	int				clientNum;
 	int				teamNum;
 	int				botinfoNum;
@@ -597,7 +600,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	if ( clientNum == -1 ) {
 		G_Printf( S_COLOR_RED "Unable to add bot. All player slots are in use.\n" );
 		G_Printf( S_COLOR_RED "Start server with more 'open' slots (or check setting of sv_maxclients cvar).\n" );
-		return;
+		return -1;
 	}
 
 	// set default team
@@ -635,7 +638,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 		if ( botinfoNum < 0 ) {
 			G_Printf( S_COLOR_RED "Error: Cannot add random bot, no bot info available.\n" );
 			trap_BotFreeClient( clientNum );
-			return;
+			return -1;
 		}
 
 		botinfo = G_GetBotInfoByNumber( botinfoNum );
@@ -647,7 +650,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	if ( !botinfo ) {
 		G_Printf( S_COLOR_RED "Error: Bot '%s' not defined\n", name );
 		trap_BotFreeClient( clientNum );
-		return;
+		return -1;
 	}
 
 	// create the bot's userinfo
@@ -662,6 +665,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 		botname = altname;
 	}
 	Info_SetValueForKey( userinfo, "name", botname );
+	if (profile) Info_SetValueForKey( userinfo, "botprofile", profile );
 	Info_SetValueForKey( userinfo, "rate", "25000" );
 	Info_SetValueForKey( userinfo, "snaps", "20" );
 	Info_SetValueForKey( userinfo, "skill", va("%.2f", skill) );
@@ -720,7 +724,7 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 	if (!*s ) {
 		trap_Print( S_COLOR_RED "Error: bot has no aifile specified\n" );
 		trap_BotFreeClient( clientNum );
-		return;
+		return -1;
 	}
 	Info_SetValueForKey( userinfo, "characterfile", s );
 
@@ -732,15 +736,28 @@ static void G_AddBot( const char *name, float skill, const char *team, int delay
 
 	// have it connect to the game as a normal client
 	if ( ClientConnect( clientNum, qtrue, qtrue ) ) {
-		return;
+		trap_BotFreeClient( clientNum );
+		return -1;
 	}
 
 	if( delay == 0 ) {
 		ClientBegin( clientNum );
-		return;
+		return clientNum;
 	}
 
 	AddBotToSpawnQueue( clientNum, delay );
+	return clientNum;
+}
+
+static void G_AddBot( const char *name, float skill, const char *team, int delay, char *altname ) {
+	G_AddBotInternal(name, skill, team, delay, altname, NULL);
+}
+
+int G_AddProfileBot( const char *character, float skill, const char *team,
+                    const char *name, const char *profile ) {
+	char displayName[MAX_NETNAME];
+	Q_strncpyz(displayName, name, sizeof(displayName));
+	return G_AddBotInternal(character, skill, team, 0, displayName, profile);
 }
 
 

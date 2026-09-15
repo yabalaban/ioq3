@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "g_local.h"
 #include "g_botapi.h"
+#include "g_botprofiles.h"
 #include "../qcommon/q_shared.h"
 #include "../botlib/botlib.h"		//bot lib interface
 #include "../botlib/be_aas.h"
@@ -1593,6 +1594,7 @@ int BotAIStartFrame(int time) {
 	}
 
 	floattime = trap_AAS_Time();
+	if (trap_AAS_Initialized()) BotProfiles_Frame(time);
 	BotController_Frame(time);
 
 	// execute scheduled bot AI
@@ -1711,6 +1713,7 @@ int BotAISetup( int restart ) {
 	int			errnum;
 
 	BotController_Init();
+	BotProfiles_Init();
 	trap_Cvar_Register(&bot_thinktime, "bot_thinktime", "100", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_memorydump, "bot_memorydump", "0", CVAR_CHEAT);
 	trap_Cvar_Register(&bot_saveroutingcache, "bot_saveroutingcache", "0", CVAR_CHEAT);

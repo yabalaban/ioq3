@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 #include "g_local.h"
 #include "g_botapi.h"
+#include "g_botprofiles.h"
 
 
 /*
@@ -453,6 +454,9 @@ qboolean	ConsoleCommand( void ) {
 	char	cmd[MAX_TOKEN_CHARS];
 
 	trap_Argv( 0, cmd, sizeof( cmd ) );
+	if ( !Q_stricmp(cmd, "botprofile") ) {
+		return BotProfiles_ConsoleCommand();
+	}
 	if ( !Q_stricmp(cmd, "botcontroller") ) {
 		return BotController_ConsoleCommand();
 	}
