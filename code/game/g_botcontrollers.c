@@ -1,6 +1,7 @@
 /* Example native controllers and registration. GPL-2.0-or-later. */
 #include "g_local.h"
 #include "g_botapi.h"
+#include "g_botfable.h"
 
 /* State belongs to each bot, not the provider. Avoid per-attach G_Alloc leaks. */
 typedef struct {
@@ -48,7 +49,8 @@ static const botController_t idleController = {
 };
 
 void BotController_RegisterAll( void ) {
-	if (!BotController_Register(&circleController) || !BotController_Register(&idleController)) {
+	if (!BotController_Register(&circleController) || !BotController_Register(&idleController) ||
+		!BotController_Register(&fableController)) {
 		G_Error("Failed to register built-in bot controllers");
 	}
 	/* Register additional static controller descriptors here. */
