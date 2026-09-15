@@ -47,17 +47,60 @@ botcontroller list
 botcontroller attach 0 circle
 botcontroller attach 1 idle
 botcontroller detach 0
+botcontroller attach 0 fable
 ```
 
 Use the bot slot numbers reported by `list`; players may already occupy lower
 slots. `circle` moves forward while turning and requests respawn after death.
 It demonstrates per-bot state and deterministic decisions, not navigation or
-combat intelligence. `idle` releases all controls. Unattached bots use stock AI.
+combat intelligence. `idle` releases all controls. `fable` is a full opponent,
+described below. Unattached bots use stock AI.
 Detach before switching an attached bot to another provider.
 
 You can also call `BotController_Attach(client, "name", "config")` and
 `BotController_Detach(client)` from game code after the bot is connected.
 Optional console configuration is one quoted string passed to `create`.
+
+## The `fable` controller
+
+`fable` is a complete controller built only on this API and the `trap_*`
+botlib functions, in [g_botfable.c](../code/game/g_botfable.c). It perceives
+players through `BotController_GetEntity` with its own field-of-view and
+line-of-sight rules, chooses weapons by distance, leads projectiles using the
+target's exported velocity, aims splash weapons at the feet, strafes at a
+per-weapon range, sidesteps incoming rockets, chases lost targets briefly, and
+otherwise collects items through the botlib goal selectors and route following.
+It fires whenever a target is visible, even while retreating for items.
+
+```text
+addbot Sarge 5
+botcontroller attach 0 fable
+botcontroller attach 1 fable "skill=0.7 fov=120 seed=42"
+```
+
+Configuration keys (space separated `key=value`, all optional):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `skill` | `1` | 0..1; lower values add aim jitter, reaction delay, and missed dodges |
+| `fov` | `150` | perception field of view in degrees; widens to 360 when hurt or shot at |
+| `turn` | `900` | maximum view rotation in degrees per second |
+| `seed` | per slot | PRNG seed for reproducible strafing and roaming decisions |
+| `weights` | `xaero` | stock bot whose `bots/<name>_i.c` item weights drive goal selection |
+
+Unknown keys or out-of-range values make `create` fail. Set the `fable_debug`
+cvar to 1 to print per-bot mode counters every 30 seconds of simulation time.
+The controller allocates one botlib goal state and one move state per bot, so a
+server near `MAX_CLIENTS` bots can run out of goal state handles.
+
+Its decision helpers are pure functions with standalone tests:
+
+```sh
+cc -std=c99 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-sign-compare \
+  -fsanitize=address,undefined tests/bot_fable_test.c code/game/g_botfable.c \
+  code/qcommon/q_math.c code/qcommon/q_shared.c -lm -o /tmp/ioq3-bot-fable-test
+/tmp/ioq3-bot-fable-test
+```
 
 ## Implement a controller
 

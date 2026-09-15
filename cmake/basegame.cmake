@@ -55,6 +55,7 @@ set(GAME_SOURCES
     ${SOURCE_DIR}/game/g_botcontrollers.c
     ${SOURCE_DIR}/game/g_botastra.c
     ${SOURCE_DIR}/game/g_botspark.c
+    ${SOURCE_DIR}/game/g_botfable.c
     ${SOURCE_DIR}/game/g_client.c
     ${SOURCE_DIR}/game/g_cmds.c
     ${SOURCE_DIR}/game/g_combat.c
